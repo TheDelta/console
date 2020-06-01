@@ -8,14 +8,30 @@ using UnityEngine;
 [AddComponentMenu("")]
 public class Console : MonoBehaviour
 {
-    private const int HistorySize = 400;
-
     public delegate void OnPrint(string text, LogType type);
+    public delegate void OnCommand(string command, object result);
+    public delegate void OnSearch(string search, ref List<SearchResult> results);
+    public delegate void OnConsoleLine(string line);
 
     /// <summary>
     /// Gets executed after a message is added to the console window.
     /// </summary>
     public static OnPrint onPrint;
+
+    /// <summary>
+    /// Gets executed after a successfull command was executed.
+    /// </summary>
+    public static OnCommand onCommand;
+
+    /// <summary>
+    /// Gets executed whenever there is a search text change and allows to modify the search results.
+    /// </summary>
+    public static OnSearch onSearch;
+
+    /// <summary>
+    /// Gets executed whenever a new line is written to the console.
+    /// </summary>
+    public static OnConsoleLine onConsoleLine;
 
     private const string ConsoleControlName = "ControlField";
     private const string PrintColor = "white";
@@ -36,6 +52,8 @@ public class Console : MonoBehaviour
         }
     }
 
+    public static int HistorySize { get; set; } = 400;
+
     private static int MaxLines
     {
         get
@@ -55,6 +73,7 @@ public class Console : MonoBehaviour
                 if (!consoleGameObject)
                 {
                     consoleGameObject = new GameObject("Console");
+                    GameObject.DontDestroyOnLoad(consoleGameObject);
                 }
 
                 Console console = consoleGameObject.GetComponent<Console>();
@@ -126,6 +145,24 @@ public class Console : MonoBehaviour
             Instance.scroll = value;
         }
     }
+
+    /// <summary>
+    /// History (read-only) of entered commands.
+    /// </summary>
+    public List<string> History
+    {
+        get { return history; }
+    }
+
+    /// <summary>
+    /// History (read-only) of console text.
+    /// </summary>
+    public List<string> Text
+    {
+        get { return text; }
+    }
+
+    public static char[] ConsoleChar = { '`', '~', '§', '^' };
 
     private string textInput;
     private float deltaTime;
@@ -398,6 +435,7 @@ public class Console : MonoBehaviour
         else
         {
             Print(result.ToString());
+            onCommand?.Invoke(command, result);
         }
     }
 
@@ -433,6 +471,8 @@ public class Console : MonoBehaviour
 
         for (int i = 0; i < lines.Count; i++)
         {
+            onConsoleLine?.Invoke(lines[i]);
+
             string line = $"<color={color}>{lines[i]}</color>";
             text.Add(line);
             if (text.Count > HistorySize)
@@ -524,39 +564,42 @@ public class Console : MonoBehaviour
 
     private bool IsConsoleKey(KeyCode keyCode)
     {
-        if (keyCode == key)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        return keyCode == key;
     }
 
     private bool IsConsoleChar(char character)
     {
-        if (character == '`')
+        for (int i = 0; i < ConsoleChar.Length; i++)
         {
-            return true;
+            if (character == ConsoleChar[i]) return true;
         }
-        else if (character == '~')
-        {
-            return true;
-        }
-        else if (character == '§')
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+
+        return false;
     }
 
-    private bool Matches(string text, Command command)
+    private bool Matches(string text, Command command, Category category)
     {
-        if (command.Name.StartsWith(text))
+        string cat = "";
+        if (text.Length > 1 && text[0] == '@')
+        {
+            int index = text.IndexOf(' ');
+            if (index != -1)
+            {
+                cat = text.Substring(0, index - 1);
+                //remove everything before the @id string
+                text = text.Substring(index + 1);
+            }
+            else
+            {
+                cat = text;
+                text = "";
+            }
+        }
+
+        bool catFound = cat.Length > 0 && category.ID.Length > 0 && ("@" + category.ID).StartsWith(cat);
+        bool commandFound = text.Length > 0 && command.Name.StartsWith(text);
+
+        if (commandFound || (catFound && (text.Length == 0 || commandFound)))
         {
             return true;
         }
@@ -594,7 +637,8 @@ public class Console : MonoBehaviour
         }
 
         //if it starts with a @, then concat
-        bool instanceOnly = false;
+        bool instanceOnly = text.Length > 1 && text[0] == '@';
+        /*
         if (text.Length > 1 && text[0] == '@')
         {
             int index = text.IndexOf(' ');
@@ -614,59 +658,32 @@ public class Console : MonoBehaviour
                 return;
             }
         }
+        */
 
         //fill in the suggestion text
         StringBuilder textBuilder = new StringBuilder();
         foreach (Category category in Library.Categories)
         {
+            if (!category.Visible) continue;
+
             foreach (Command command in category.Commands)
             {
-                if (Matches(text, command))
+                if (!command.Visible) continue;
+
+                if (Matches(text, command, category))
                 {
-                    textBuilder.Clear();
-
-                    //not static, so show that it needs an @id
-                    if (!command.IsStatic)
-                    {
-                        textBuilder.Append("@id ");
-                    }
-
                     if (instanceOnly && command.IsStatic)
                     {
                         continue;
                     }
 
-                    textBuilder.Append(string.Join("/", command.Names));
-                    if (command.Member is MethodInfo)
-                    {
-                        foreach (string parameter in command.Parameters)
-                        {
-                            textBuilder.Append(" ˂" + parameter + "˃");
-                        }
-                    }
-                    else if (command.Member is PropertyInfo property)
-                    {
-                        MethodInfo set = property.GetSetMethod();
-                        if (set != null)
-                        {
-                            textBuilder.Append(" [value]");
-                        }
-                    }
-                    else if (command.Member is FieldInfo)
-                    {
-                        textBuilder.Append(" [value]");
-                    }
-
-                    if (!string.IsNullOrEmpty(command.Description))
-                    {
-                        textBuilder.Append(" = " + command.Description);
-                    }
-
-                    SearchResult result = new SearchResult(textBuilder.ToString(), command.Name);
+                    SearchResult result = new SearchResult(command.ToString(), command.Name);
                     searchResults.Add(result);
                 }
             }
         }
+
+        onSearch?.Invoke(text, ref searchResults);
     }
 
     /// <summary>
@@ -852,7 +869,7 @@ public class Console : MonoBehaviour
                     }
                 }
             }
-            else if (Event.current.keyCode == KeyCode.DownArrow)
+            else if (Event.current.keyCode == KeyCode.DownArrow || Event.current.keyCode == KeyCode.Tab)
             {
                 if (!typedSomething)
                 {
@@ -934,7 +951,7 @@ public class Console : MonoBehaviour
         }
 
         //display the search suggestions
-        GUI.color = new Color(1f, 1f, 1f, 0.4f);
+        GUI.color = new Color(1f, 1f, 1f, 0.5f);
         StringBuilder suggestionsText = new StringBuilder();
         for (int i = 0; i < searchResults.Count; i++)
         {

@@ -22,6 +22,7 @@ namespace Popcron.Console
 
                 return commands;
             }
+            set { commands = value; }
         }
 
         public static List<Category> Categories
@@ -35,6 +36,7 @@ namespace Popcron.Console
 
                 return categories;
             }
+            set { categories = value; }
         }
 
         public static void FindCategories()
@@ -79,6 +81,7 @@ namespace Popcron.Console
                     {
                         if (typesWithoutCategories.Contains(command.Owner))
                         {
+                            command.Category = uncategorized;
                             uncategorized.Commands.Add(command);
                         }
                     }

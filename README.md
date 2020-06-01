@@ -1,12 +1,15 @@
 ![Woah console woah!!!](https://cdn.discordapp.com/attachments/377316629220032523/529091513104465920/unknown.png)
 
 # Console
+
 A command line parser for use in Unity.
 
 ## Requirements
+
 - .NET Framework 4.5
 
 ## Features
+
 - Text suggestions
 - Auto finds commands
 - Command categories for organization
@@ -15,15 +18,19 @@ A command line parser for use in Unity.
 - Support for methods, fields and properties
 
 ## Installing
+
 To install for use in Unity, copy everything from this repository to `<YourNewUnityProject>/Packages/Popcron.Console` folder.
 
 If using 2018.3.x, you can add a new entry to the manifest.json file in your Packages folder:
+
 ```json
 "com.popcron.console": "https://github.com/popcron/console.git"
 ```
+
 After that, call `Console.Open = false;` in any Start method.
 
 ## Calling commands
+
 ```cs
 string command = "help";
 object result = await Parser.Run(command);
@@ -32,6 +39,7 @@ object result = await Parser.Run(command);
 or just `help` from the console window.
 
 ## Instance commands
+
 Command methods that are declared as static can be executed from any context. Instance methods however cannot be called in the same way. These commands require an object that owns the method. The parser class provides methods that allow you to register and unregister objects with a unique ID, which can allow instance commands to be called on an object.
 
 ```cs
@@ -42,13 +50,13 @@ public class PlayerAmmo : MonoBehaviour
 {
     [Command("ammo")]
     public int ammo = 100;
-    
+
     //when the object gets created, register it
     private void OnEnable()
     {
         Parser.Register(this, "player");
     }
-    
+
     //when the object gets destroyed, unregister it
     private void OnDisable()
     {
@@ -61,6 +69,7 @@ To call this command from the console, you call the method exactly as its writen
 `@player ammo 100`
 
 ## Examples
+
 To create a simple command, add a `Command` attribute to your method.
 
 ```cs
@@ -75,6 +84,7 @@ public class Commands
     }
 }
 ```
+
 `add 2 3` will return `5`
 
 <details>
@@ -87,18 +97,19 @@ using Popcron.Console;
 [Category("Default commands")]
 public class Commands
 {
-    [Command("add")]
-    public static int Add(int a, int b)
-    {
-        return a + b;
-    }
+[Command("add")]
+public static int Add(int a, int b)
+{
+return a + b;
 }
-```
+}
+
+````
 </details>
 
 <details>
     <summary>Command aliases</summary>
-    
+
 Commands can have multiple aliases. To give a command another calling name, add the `Alias` attribute
 ```cs
 using Popcron.Console;
@@ -113,13 +124,16 @@ public class Commands
         return a + b;
     }
 }
-```
+````
+
 `+ 2 3` will return `5`
 
 `add 7 -2` will return `5`
+
 </details>
 
 ## Supported types
+
 - string
 - char
 - bool
@@ -136,6 +150,7 @@ public class Commands
 You can also add your own type converters by inheriting from the abstract `Converter` class.
 
 ## Built in commands
+
 - `info` Prints the system information (OS, Device, CPU and GPU).
 - `show fps` Boolean toggle for whether the fps counter should show up or not.
 - `clear` Clears the console.
@@ -145,25 +160,26 @@ You can also add your own type converters by inheriting from the abstract `Conve
 - `echo` Dumb echo command.
 
 ## FAQ
+
 - **How do I add this to my unity project?**
-Add `"com.popcron.console": "https://github.com/popcron/console.git"` to your `manifest.json` file in the packages folder.
+  Add `"com.popcron.console": "https://github.com/popcron/console.git"` to your `manifest.json` file in the packages folder.
 - **It doesn't show up.**
-Press ~.
+  Press ~.
 - **I pressed it, it still doesn't show up!**
-Invoke the `Console.Initialize()` method, or any of the static methods/properties once in the game.
+  Invoke the `Console.Initialize()` method, or any of the static methods/properties once in the game.
 - **How do I change the key to open the console?**
-Change the `Console.Key` property.
+  Change the `Console.Key` property.
 - **I'm not using the built-in input system, does it work with the new one?**
-Yes, if the new InputSystem is available, it will use that instead of the old one.
+  Yes, if the new InputSystem is available, it will use that instead of the old one.
 - **I want to use the original system console that's included.**
-If you want to reference the "original console", you can do so by referencing the namespace: `System.Console.WriteLine("wee")`.
+  If you want to reference the "original console", you can do so by referencing the namespace: `System.Console.WriteLine("wee")`.
 - **Can I use properties as commands?**
-Yes.
+  Yes.
 - **Can I use fields as commands?**
-Yes.
+  Yes.
 - **Static only?**
-No you can use instance members too, as long as you register and unregister the instance owner of the command. More info above.
+  No you can use instance members too, as long as you register and unregister the instance owner of the command. More info above.
 - **How do I categorize a command?**
-Add a `Category` attribute to the class type.
+  Add a `Category` attribute to the class type.
 - **How do I make my own converter?**
-Create a new class, and inherit from the `Converter` class.
+  Create a new class, and inherit from the `Converter` class.

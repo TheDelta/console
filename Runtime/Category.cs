@@ -7,6 +7,7 @@ namespace Popcron.Console
     public class Category
     {
         private string name = "";
+        private string id = "";
         private List<Command> commands = new List<Command>();
 
         public string Name
@@ -17,6 +18,16 @@ namespace Popcron.Console
             }
         }
 
+        public string ID
+        {
+            get
+            {
+                return id;
+            }
+        }
+
+        public bool Visible { get; set; } = true;
+
         public List<Command> Commands
         {
             get
@@ -25,9 +36,10 @@ namespace Popcron.Console
             }
         }
 
-        private Category(string name)
+        private Category(string name, string id = "")
         {
             this.name = name;
+            this.id = id;
         }
 
         public static Category CreateUncategorized()
@@ -41,12 +53,13 @@ namespace Popcron.Console
             CategoryAttribute attribute = type.GetCategoryAttribute();
             if (attribute == null) return null;
 
-            Category category = new Category(attribute.name);
+            Category category = new Category(attribute.name, attribute.id);
             List<Command> commands = Library.Commands;
             foreach (Command command in commands)
             {
                 if (command.Owner == type)
                 {
+                    command.Category = category;
                     category.commands.Add(command);
                 }
             }

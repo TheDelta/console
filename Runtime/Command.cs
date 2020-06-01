@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Text;
 
 namespace Popcron.Console
 {
@@ -18,6 +19,11 @@ namespace Popcron.Console
         private Type owner;
         private List<string> names = new List<string>();
         private List<object> parameters = new List<object>();
+
+        public Category Category { get; set; } = null;
+
+        public bool Enabled { get; set; } = true;
+        public bool Visible { get; set; } = true;
 
         public string Name
         {
@@ -332,6 +338,65 @@ namespace Popcron.Console
             }
 
             return true;
+        }
+
+        public string ToStringWithCategory(Category category)
+        {
+
+            StringBuilder textBuilder = new StringBuilder();
+
+            //not static, so show that it needs an @id
+            if (!this.IsStatic)
+            {
+                textBuilder.Append(string.Format("@{0} ", category.ID.Length > 0 ? category.ID : "<id>"));
+            }
+
+            textBuilder.Append(this.ToString());
+
+            return textBuilder.ToString();
+        }
+
+        public override string ToString()
+        {
+            StringBuilder textBuilder = new StringBuilder();
+
+            if (!this.IsStatic)
+            {
+                textBuilder.Append(string.Format("@{0} ", Category != null && Category.ID.Length > 0 ? Category.ID : "<id>"));
+            }
+
+            textBuilder.Append(string.Join("/", this.Names));
+            if (this.Member is MethodInfo)
+            {
+                foreach (ParameterInfo parameter in (this.Member as MethodInfo).GetParameters())
+                {
+                    if (parameter.HasDefaultValue)
+                        textBuilder.Append($" <<i><color=yellow>{parameter.Name}</color></i>:<color=cyan>{parameter.ParameterType.Name}</color>=<color=lightblue>{parameter.DefaultValue}</color>>");
+                    else
+                        textBuilder.Append($" <<color=yellow>{parameter.Name}</color>:<color=cyan>{parameter.ParameterType.Name}</color>>");
+                }
+            }
+            else if (this.Member is PropertyInfo property)
+            {
+                MethodInfo set = property.GetSetMethod();
+                if (set != null)
+                {
+                    textBuilder.Append($" <<color=yellow>{property.Name}</color>:<color=cyan>{property.PropertyType.Name}</color>>");
+                }
+            }
+            else if (this.Member is FieldInfo)
+            {
+                var fieldInfo = this.Member as FieldInfo;
+
+                textBuilder.Append($" <<color=yellow>{fieldInfo.Name}</color>:<color=cyan>{fieldInfo.FieldType.Name}</color>>");
+            }
+
+            if (!string.IsNullOrEmpty(this.Description))
+            {
+                textBuilder.Append(" = " + this.Description);
+            }
+
+            return textBuilder.ToString();
         }
     }
 }

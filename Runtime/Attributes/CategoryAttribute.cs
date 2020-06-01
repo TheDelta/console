@@ -7,10 +7,12 @@ namespace Popcron.Console
     public class CategoryAttribute : Attribute
     {
         public string name = "";
+        public string id = "";
 
-        public CategoryAttribute(string name)
+        public CategoryAttribute(string name, string id = "")
         {
             this.name = Sanitize(name);
+            this.id = id;
         }
     }
 }

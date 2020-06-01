@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using UnityEngine;
 
 namespace Popcron.Console
 {
@@ -63,7 +64,9 @@ namespace Popcron.Console
                 { typeof(char), new CharConverter() },
                 { typeof(Type), new TypeConverter() },
                 { typeof(DateTime), new DateTimeConverter() },
-                { typeof(object), new ObjectConverter() }
+                { typeof(object), new ObjectConverter() },
+                { typeof(Vector3), new Vector3Converter() },
+                { typeof(Vector2), new Vector2Converter() },
             };
 
             //then find any extras

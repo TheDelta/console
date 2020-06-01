@@ -156,9 +156,18 @@ namespace Popcron.Console
                 //name matches? oooh, ;) on on...
                 if (nameMatch)
                 {
+                    if (!command.Enabled)
+                    {
+                        // notify the user about that because its visible
+                        if (command.Visible)
+                            return new NullReferenceException("Insuficcient permissions for this command!");
+                        else
+                            continue; // secret hide
+                    }
+
                     string text = input.Replace(commandInput, "");
                     List<string> parameters = GetParameters(text);
-                    if (command.Matches(parameters, out object[] converted))
+                     if (command.Matches(parameters, out object[] converted))
                     {
                         object owner = FindOwner(command, id);
                         if (owner == null && !command.IsStatic)
